@@ -55,6 +55,8 @@ class App(QMainWindow):
         # self.show()
 
         self.load.clicked.connect(self.getFileName)
+        self.help.clicked.connect(self.show_window_1)
+        self.setting.clicked.connect(self.show_window_2)
 
         self.plainTextEdit = QPlainTextEdit()
         self.plainTextEdit.setFixedSize(100, 100)
@@ -65,6 +67,14 @@ class App(QMainWindow):
         self.resize(800, 880)
         self.setWindowTitle("Проектище")
         self.show()
+
+    def show_window_1(self):
+        self.w1 = Help()
+        self.w1.show()
+
+    def show_window_2(self):
+        self.w2 = Settings()
+        self.w2.show()
 
     def getFileName(self):
         filename, filetype = QFileDialog.getOpenFileName(self,
@@ -87,6 +97,7 @@ class App(QMainWindow):
 
     def bluring(self):
         def blurContours(image, contours, ksize, sigmaX, *args):
+            #print(type(self.w2.blurvalue))
             sigmaY = args[0] if len(args) > 0 else sigmaX
             mask = np.zeros(image.shape[:2])
             for i, contour in enumerate(contours):
@@ -114,7 +125,7 @@ class App(QMainWindow):
         intListArrPoint = arrPoints.astype(int).tolist()
         bluredImg = cv2.imread(self.filename)
         for i in intListArrPoint:
-            bluredImg = blurContours(bluredImg, [[np.array(i)]], 25, 12, 12)
+            bluredImg = blurContours(bluredImg, [[np.array(i)]], int(self.w2.blurvalue), 12, 12)
         cv2.imwrite(outputfile, bluredImg)
 
         image = Image.open(outputfile)
@@ -132,8 +143,69 @@ class App(QMainWindow):
         self.im2.resize(pixmap4.width(), pixmap4.height())
 
 
+class Settings(QWidget):
+    def __init__(self):
+        super(Settings, self).__init__()
+        self.setWindowTitle('Settings')
+        sld = QSlider(Qt.Horizontal, self)
+        sld.setStyleSheet("""
+                    QSlider{
+                        background: #E3DEE2;
+                    }
+                    QSlider::groove:horizontal {  
+                        height: 10px;
+                        margin: 0px;
+                        border-radius: 5px;
+                        background: #B0AEB1;
+                    }
+                    QSlider::handle:horizontal {
+                        background: #fff;
+                        border: 1px solid #E3DEE2;
+                        width: 17px;
+                        margin: -5px 0; 
+                        border-radius: 8px;
+                    }
+                    QSlider::sub-page:qlineargradient {
+                        background: #3B99FC;
+                        border-radius: 5px;
+                    }
+                """)
+        sld.valueChanged[int].connect(self.changeValue)
+        self.counter = QLCDNumber(self)
+        layout = QVBoxLayout()
+        layout.addWidget(sld)
+        layout.addWidget(self.counter)
+        self.setLayout(layout)
+        self.blurvalue = 0
+        self.resize(400, 300)
+
+    def changeValue(self, value):
+        self.blurvalue = value
+        print(value)
+        self.counter.display(value)
+
+
+class Help(QWidget):
+    def __init__(self):
+        super(Help, self).__init__()
+        # uic.loadUi('des_help.ui', self)
+        self.setWindowTitle('Help')
+        self.setMinimumWidth(2300)
+        self.setMinimumHeight(1200)
+
+        pixmap = QPixmap("help123.png")
+        lbl = QLabel(self)
+        lbl.setPixmap(pixmap)
+        self.show()
+
+
+def except_hook(cls, exception, traceback):
+    sys.__excepthook__(cls, exception, traceback)
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = App()
     ex.show()
+    sys.excepthook = except_hook
     sys.exit(app.exec_())
